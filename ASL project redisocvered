@@ -1,0 +1,58 @@
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv3D, LSTM, Dense, Dropout
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.applications import VGG16
+from sklearn.model_selection import train_test_split
+
+# Define helper functions
+def load_video(path):
+    # ... (function to load and preprocess video frames)
+
+def preprocess_text(text):
+    # ... (function to tokenize and convert text to numerical representation)
+
+# Load data
+X_data = []
+y_data = []
+for video_path, transcript in data_list:
+    frames = load_video(video_path)
+    text_data = preprocess_text(transcript)
+    X_data.append(frames)
+    y_data.append(text_data)
+
+# Split data into training and validation sets
+X_train, X_val, y_train, y_val = train_test_split(X_data, y_data, test_size=0.2)
+
+# Pad sequences with maximum length
+max_len = max(len(seq) for seq in y_train)
+X_train = pad_sequences(X_train, maxlen=max_len)
+y_train = pad_sequences(y_train, maxlen=max_len)
+
+# Define the model
+model = Sequential([
+    VGG16(weights='imagenet', include_top=False, input_shape=(max_len, 224, 224, 3)),  # Pre-trained VGG16 for feature extraction
+    Flatten(),
+    LSTM(128, return_sequences=True),
+    LSTM(64),
+    Dense(len(vocabulary), activation='softmax')
+])
+
+# Compile the model
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Train the model
+model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
+
+# Prediction
+def predict_text(video_path):
+    frames = load_video(video_path)
+    frames = np.expand_dims(frames, axis=0)  # Add batch dimension
+    predicted_seq = model.predict(frames)[0]
+    predicted_words = [index_to_word[np.argmax(x)] for x in predicted_seq]
+    return predicted_words
+
+# Example usage
+predicted_text = predict_text("path/to/video.mp4")
+print("Predicted Text:", " ".join(predicted_text)) 
